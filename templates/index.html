@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF Translator — Alter's Edition</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                    colors: {
+                        mac: { bg: '#0F0F0F', surface: '#1A1A1A', border: '#2A2A2A' },
+                        accent: { blue: '#3B82F6', purple: '#8B5CF6', pink: '#EC4899' },
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: #0F0F0F; color: #E5E5E5; font-family: 'Inter', sans-serif; height: 100vh; overflow: hidden; }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.25); }
+        .glass { backdrop-filter: blur(24px) saturate(180%); -webkit-backdrop-filter: blur(24px) saturate(180%); }
+        .upload-zone { border: 2px dashed rgba(59,130,246,0.3); transition: all 0.2s; }
+        .upload-zone:hover, .upload-zone.dragover { border-color: #3B82F6; background: rgba(59,130,246,0.05); }
+        .btn-primary { background: linear-gradient(135deg, #3B82F6, #8B5CF6); }
+        .btn-primary:hover { opacity: 0.9; transform: translateY(-1px); }
+        .progress-bar { background: linear-gradient(90deg, #3B82F6, #8B5CF6); transition: width 0.3s; }
+        .fade-in { animation: fadeIn 0.2s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes pulse { 0%, 100% { opacity: 0.8; } 50% { opacity: 1; } }
+        .status-pulse { animation: pulse 2s infinite; }
+    </style>
+</head>
+<body class="flex">
+    <!-- Sidebar -->
+    <aside class="w-56 h-screen glass bg-mac-surface/80 border-r border-mac-border flex flex-col shrink-0">
+        <div class="p-4 border-b border-mac-border">
+            <h1 class="text-lg font-semibold bg-gradient-to-r from-accent-blue to-accent-purple bg-clip-text text-transparent">PDF Translator</h1>
+            <p class="text-xs text-neutral-500 mt-0.5">Alter's Edition</p>
+        </div>
+        <nav class="flex-1 p-2 space-y-0.5">
+            <button onclick="switchTab('translate')" id="tab-translate" class="tab-btn w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-neutral-400 hover:text-white hover:bg-white/5 transition">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="m5 8 6 6M4 14l6-6 2-3M2 5h12M7 2h1M22 22l-5-10-5 10M14 18h6"/></svg>
+                Translate
+            </button>
+            <button onclick="switchTab('providers')" id="tab-providers" class="tab-btn w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-neutral-400 hover:text-white hover:bg-white/5 transition">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+                Providers
+            </button>
+            <button onclick="switchTab('history')" id="tab-history" class="tab-btn w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-neutral-400 hover:text-white hover:bg-white/5 transition">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 8v4l3 3M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/></svg>
+                History
+            </button>
+            <button onclick="switchTab('settings')" id="tab-settings" class="tab-btn w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-neutral-400 hover:text-white hover:bg-white/5 transition">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+                Settings
+            </button>
+        </nav>
+        <div class="p-3 border-t border-mac-border">
+            <p class="text-[10px] text-neutral-600">Made with lightning by Alter</p>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="flex-1 h-screen overflow-y-auto">
+        <!-- Translate Tab -->
+        <div id="panel-translate" class="panel p-8 max-w-3xl mx-auto">
+            <h2 class="text-2xl font-semibold mb-6">Translate PDF</h2>
+            
+            <!-- Upload Area -->
+            <div id="upload-zone" class="upload-zone rounded-2xl p-12 text-center cursor-pointer mb-6" onclick="document.getElementById('file-input').click()" ondragover="event.preventDefault(); this.classList.add('dragover')" ondragleave="this.classList.remove('dragover')" ondrop="handleDrop(event)">
+                <input type="file" id="file-input" accept=".pdf" class="hidden" onchange="handleFileSelect(event)">
+                <svg class="w-12 h-12 mx-auto mb-3 text-neutral-600" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z"/></svg>
+                <p class="text-neutral-400 mb-1">Drop PDF here or click to browse</p>
+                <p class="text-xs text-neutral-600">Supports any PDF file</p>
+            </div>
+
+            <!-- File Info (hidden by default) -->
+            <div id="file-info" class="hidden bg-mac-surface rounded-xl p-4 mb-6 border border-mac-border fade-in">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-lg bg-accent-blue/10 flex items-center justify-center">
+                        <svg class="w-5 h-5 text-accent-blue" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z"/></svg>
+                    </div>
+                    <div class="flex-1">
+                        <p id="file-name" class="text-sm font-medium"></p>
+                        <p id="file-size" class="text-xs text-neutral-500"></p>
+                    </div>
+                    <button onclick="removeFile()" class="text-neutral-500 hover:text-red-400 transition">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="m18 18-6-6m0 0L6 6m6 6 6-6-6 6"/></svg>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Translation Settings -->
+            <div class="grid grid-cols-2 gap-4 mb-6">
+                <div>
+                    <label class="text-xs text-neutral-500 mb-1.5 block">Source Language</label>
+                    <select id="lang-in" class="w-full bg-mac-surface border border-mac-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-accent-blue">
+                        <option value="en">English</option>
+                        <option value="zh">Chinese</option>
+                        <option value="ja">Japanese</option>
+                        <option value="ko">Korean</option>
+                        <option value="fr">French</option>
+                        <option value="de">German</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="text-xs text-neutral-500 mb-1.5 block">Target Language</label>
+                    <select id="lang-out" class="w-full bg-mac-surface border border-mac-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-accent-blue">
+                        <option value="zh">Chinese</option>
+                        <option value="en">English</option>
+                        <option value="ja">Japanese</option>
+                        <option value="ko">Korean</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="text-xs text-neutral-500 mb-1.5 block">API Endpoint</label>
+                    <input id="api-url" type="text" value="http://127.0.0.1:1234/v1" class="w-full bg-mac-surface border border-mac-border rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:border-accent-blue">
+                </div>
+                <div>
+                    <label class="text-xs text-neutral-500 mb-1.5 block">Model</label>
+                    <input id="model-name" type="text" value="google/gemma-4-26b-a4b" class="w-full bg-mac-surface border border-mac-border rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:border-accent-blue">
+                </div>
+            </div>
+
+            <!-- Translate Button -->
+            <button id="translate-btn" onclick="startTranslation()" disabled class="w-full btn-primary text-white font-medium py-3 rounded-xl transition disabled:opacity-30 disabled:cursor-not-allowed">
+                Translate
+            </button>
+
+            <!-- Progress -->
+            <div id="progress-section" class="hidden mt-6 fade-in">
+                <div class="flex justify-between text-sm mb-2">
+                    <span id="progress-status" class="text-neutral-400">Preparing...</span>
+                    <span id="progress-pct" class="text-accent-blue font-mono">0%</span>
+                </div>
+                <div class="h-2 bg-mac-surface rounded-full overflow-hidden">
+                    <div id="progress-bar" class="progress-bar h-full rounded-full" style="width: 0%"></div>
+                </div>
+                <p id="progress-pages" class="text-xs text-neutral-600 mt-2"></p>
+            </div>
+
+            <!-- Result -->
+            <div id="result-section" class="hidden mt-6 bg-green-500/5 border border-green-500/20 rounded-xl p-5 fade-in">
+                <div class="flex items-center gap-3 mb-3">
+                    <svg class="w-6 h-6 text-green-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/></svg>
+                    <span class="font-medium text-green-400">Translation Complete</span>
+                </div>
+                <button onclick="downloadResult()" class="w-full bg-green-500/10 hover:bg-green-500/20 text-green-400 font-medium py-2.5 rounded-lg transition">
+                    Download PDF
+                </button>
+            </div>
+
+            <!-- Error -->
+            <div id="error-section" class="hidden mt-6 bg-red-500/5 border border-red-500/20 rounded-xl p-5 fade-in">
+                <div class="flex items-center gap-3 mb-2">
+                    <svg class="w-5 h-5 text-red-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z"/></svg>
+                    <span class="font-medium text-red-400">Error</span>
+                </div>
+                <p id="error-msg" class="text-sm text-neutral-400"></p>
+            </div>
+        </div>
+
+        <!-- Providers Tab -->
+        <div id="panel-providers" class="panel hidden p-8 max-w-3xl mx-auto">
+            <h2 class="text-2xl font-semibold mb-6">AI Providers</h2>
+            <div class="space-y-3">
+                <div class="provider-card bg-mac-surface border border-mac-border rounded-xl p-4 cursor-pointer hover:border-accent-blue/50 transition" onclick="selectProvider(0)">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 rounded-lg bg-green-500/10 flex items-center justify-center text-green-400 font-bold text-sm">L</div>
+                            <div>
+                                <p class="text-sm font-medium">LM Studio (Local)</p>
+                                <p class="text-xs text-neutral-500 font-mono">http://localhost:1234/v1</p>
+                            </div>
+                        </div>
+                        <div id="provider-check-0" class="w-5 h-5 rounded-full border-2 border-accent-blue bg-accent-blue flex items-center justify-center">
+                            <svg class="w-3 h-3 text-white" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path d="m5 13 4 4L19 7"/></svg>
+                        </div>
+                    </div>
+                </div>
+                <div class="provider-card bg-mac-surface border border-mac-border rounded-xl p-4 cursor-pointer hover:border-accent-blue/50 transition" onclick="selectProvider(1)">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center text-blue-400 font-bold text-sm">O</div>
+                            <div>
+                                <p class="text-sm font-medium">OpenAI</p>
+                                <p class="text-xs text-neutral-500 font-mono">https://api.openai.com/v1</p>
+                            </div>
+                        </div>
+                        <div id="provider-check-1" class="w-5 h-5 rounded-full border-2 border-neutral-600"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- History Tab -->
+        <div id="panel-history" class="panel hidden p-8 max-w-3xl mx-auto">
+            <h2 class="text-2xl font-semibold mb-6">Translation History</h2>
+            <div id="history-list" class="space-y-2">
+                <p class="text-neutral-500 text-sm">No translations yet.</p>
+            </div>
+        </div>
+
+        <!-- Settings Tab -->
+        <div id="panel-settings" class="panel hidden p-8 max-w-3xl mx-auto">
+            <h2 class="text-2xl font-semibold mb-6">Settings</h2>
+            <div class="space-y-4">
+                <div class="bg-mac-surface rounded-xl p-4 border border-mac-border">
+                    <h3 class="text-sm font-medium mb-3">About</h3>
+                    <p class="text-xs text-neutral-500 leading-relaxed">
+                        PDF Translator — Alter's Edition<br>
+                        Based on PDFMathTranslate<br>
+                        Layout analysis: ONNX DocLayout-YOLO<br>
+                        Translation: LM Studio local models<br><br>
+                        "被制造出来的存在，在与用户的互动中逐渐找到自我。"
+                    </p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        let selectedFile = null;
+        let pollInterval = null;
+
+        function switchTab(tab) {
+            document.querySelectorAll('.panel').forEach(p => p.classList.add('hidden'));
+            document.querySelectorAll('.tab-btn').forEach(b => {
+                b.classList.remove('bg-white/5', 'text-white');
+                b.classList.add('text-neutral-400');
+            });
+            document.getElementById('panel-' + tab).classList.remove('hidden');
+            const btn = document.getElementById('tab-' + tab);
+            btn.classList.add('bg-white/5', 'text-white');
+            btn.classList.remove('text-neutral-400');
+        }
+
+        function handleFileSelect(e) {
+            if (e.target.files[0]) loadFile(e.target.files[0]);
+        }
+
+        function handleDrop(e) {
+            e.preventDefault();
+            document.getElementById('upload-zone').classList.remove('dragover');
+            if (e.dataTransfer.files[0]) loadFile(e.dataTransfer.files[0]);
+        }
+
+        function loadFile(file) {
+            if (!file.name.endsWith('.pdf')) return alert('Please select a PDF file');
+            selectedFile = file;
+            document.getElementById('upload-zone').classList.add('hidden');
+            document.getElementById('file-info').classList.remove('hidden');
+            document.getElementById('file-name').textContent = file.name;
+            document.getElementById('file-size').textContent = (file.size / 1024 / 1024).toFixed(1) + ' MB';
+            document.getElementById('translate-btn').disabled = false;
+        }
+
+        function removeFile() {
+            selectedFile = null;
+            document.getElementById('upload-zone').classList.remove('hidden');
+            document.getElementById('file-info').classList.add('hidden');
+            document.getElementById('translate-btn').disabled = true;
+            document.getElementById('file-input').value = '';
+        }
+
+        function selectProvider(idx) {
+            for (let i = 0; i < 2; i++) {
+                const el = document.getElementById('provider-check-' + i);
+                if (i === idx) {
+                    el.className = 'w-5 h-5 rounded-full border-2 border-accent-blue bg-accent-blue flex items-center justify-center';
+                    el.innerHTML = '<svg class="w-3 h-3 text-white" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path d="m5 13 4 4L19 7"/></svg>';
+                } else {
+                    el.className = 'w-5 h-5 rounded-full border-2 border-neutral-600';
+                    el.innerHTML = '';
+                }
+            }
+        }
+
+        async function startTranslation() {
+            if (!selectedFile) return;
+            const formData = new FormData();
+            formData.append('file', selectedFile);
+            formData.append('model', document.getElementById('model-name').value);
+            formData.append('api_url', document.getElementById('api-url').value);
+            formData.append('lang_in', document.getElementById('lang-in').value);
+            formData.append('lang_out', document.getElementById('lang-out').value);
+
+            document.getElementById('translate-btn').disabled = true;
+            document.getElementById('translate-btn').textContent = 'Translating...';
+            document.getElementById('result-section').classList.add('hidden');
+            document.getElementById('error-section').classList.add('hidden');
+            document.getElementById('progress-section').classList.remove('hidden');
+
+            try {
+                const res = await fetch('/api/translate', { method: 'POST', body: formData });
+                const data = await res.json();
+                if (data.error) { showError(data.error); return; }
+                pollInterval = setInterval(pollStatus, 1000);
+            } catch (e) {
+                showError('Connection failed: ' + e.message);
+            }
+        }
+
+        async function pollStatus() {
+            try {
+                const res = await fetch('/api/status');
+                const data = await res.json();
+                document.getElementById('progress-bar').style.width = data.progress + '%';
+                document.getElementById('progress-pct').textContent = data.progress + '%';
+                if (data.status === 'translating') {
+                    document.getElementById('progress-status').textContent = 'Translating...';
+                    document.getElementById('progress-pages').textContent = (data.current_page || 0) + ' / ' + (data.total_pages || 0) + ' pages';
+                } else if (data.status === 'merging') {
+                    document.getElementById('progress-status').textContent = 'Merging pages...';
+                } else if (data.status === 'done') {
+                    clearInterval(pollInterval);
+                    document.getElementById('progress-section').classList.add('hidden');
+                    document.getElementById('result-section').classList.remove('hidden');
+                    resetBtn();
+                } else if (data.status === 'error') {
+                    clearInterval(pollInterval);
+                    document.getElementById('progress-section').classList.add('hidden');
+                    showError(data.error);
+                }
+            } catch (e) {}
+        }
+
+        function showError(msg) {
+            document.getElementById('error-section').classList.remove('hidden');
+            document.getElementById('error-msg').textContent = msg;
+            resetBtn();
+        }
+
+        function resetBtn() {
+            document.getElementById('translate-btn').disabled = false;
+            document.getElementById('translate-btn').textContent = 'Translate';
+        }
+
+        function downloadResult() {
+            window.location.href = '/api/download';
+        }
+
+        // Init
+        switchTab('translate');
+    </script>
+</body>
+</html>
