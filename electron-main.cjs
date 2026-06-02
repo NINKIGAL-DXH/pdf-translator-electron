@@ -74,9 +74,9 @@ function createWindow() {
   startPythonBackend();
 
   setTimeout(() => {
-    mainWindow.loadURL('http://127.0.0.1:5050').catch((err) => {
+    mainWindow.loadURL('http://localhost:5050').catch((err) => {
       setTimeout(() => {
-        mainWindow.loadURL('http://127.0.0.1:5050').catch((e) => {
+        mainWindow.loadURL('http://localhost:5050').catch((e) => {
           dialog.showErrorBox('Connection Error', 'Cannot connect to backend on port 5050.\n\n' + e.message);
         });
       }, 2000);
