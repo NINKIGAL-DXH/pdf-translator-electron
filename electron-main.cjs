@@ -77,7 +77,7 @@ function createWindow() {
     mainWindow.loadURL('http://localhost:5173').catch((err) => {
       setTimeout(() => {
         mainWindow.loadURL('http://localhost:5173').catch((e) => {
-          dialog.showErrorBox('Connection Error', 'Cannot connect to Vite dev server on port 5173. Make sure 'npm run dev' is running.\n\n' + e.message);
+          dialog.showErrorBox("Connection Error", "Cannot connect to Vite dev server on port 5173. Make sure npm run dev is running.\n\n" + e.message);
         });
       }, 2000);
     });
