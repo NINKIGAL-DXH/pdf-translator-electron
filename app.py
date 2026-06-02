@@ -3,7 +3,7 @@ PDF Translator — Alter's Edition
 基于 PDFMathTranslate 的本地 PDF 翻译工具
 
 用法: python app.py
-然后浏览器打开 http://localhost:5050
+然后浏览器打开 http://localhost:5051
 """
 import sys
 import os
@@ -311,6 +311,6 @@ def api_history():
 if __name__ == '__main__':
     print("=" * 50)
     print("  PDF Translator — Alter's Edition")
-    print("  http://localhost:5050")
+    print("  http://localhost:5051")
     print("=" * 50)
-    app.run(host='0.0.0.0', port=5050, debug=False)
+    app.run(host='0.0.0.0', port=5051, debug=False)
